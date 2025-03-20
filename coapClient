@@ -1,0 +1,30 @@
+import asyncio
+from aiocoap import Context, Message, GET
+
+async def get_temperature():
+    protocol = await Context.create_client_context()
+    request = Message(code=GET, uri='coap://[2001:db8::5c0d:88b4:66d4:1824]/temperature')
+    
+    try:
+        response = await protocol.request(request).response
+        payload = response.payload.decode('utf-8')
+        parts = payload.split(" and Scale: ")
+        if len(parts) == 2:
+            raw_temp = int(parts[0].split(": ")[1])
+            scale = int(parts[1])  
+            temperature = raw_temp * (10 ** scale)
+            
+            print(f"Temperature: {temperature:.2f} °C") 
+        else:
+            print(f"Unexpected payload format: {payload}")
+    
+    except Exception as e:
+        print(f"Failed to fetch temperature: {e}")
+
+async def main():
+    while True:
+        await get_temperature()
+        await asyncio.sleep(60)
+
+if __name__ == '__main__':
+    asyncio.run(main())
